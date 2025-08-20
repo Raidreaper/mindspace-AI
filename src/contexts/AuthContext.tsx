@@ -69,6 +69,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       return { error };
+    } catch (err: any) {
+      toast({
+        title: "Network error",
+        description: err?.message || "Please check your internet connection and try again.",
+        variant: "destructive",
+      });
+      return { error: err };
     } finally {
       setLoading(false);
     }
@@ -91,6 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       return { error };
+    } catch (err: any) {
+      toast({
+        title: "Network error",
+        description: err?.message || "Please check your internet connection and try again.",
+        variant: "destructive",
+      });
+      return { error: err };
     } finally {
       setLoading(false);
     }
@@ -107,6 +121,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           variant: "destructive"
         });
       }
+    } catch (err: any) {
+      toast({
+        title: "Network error",
+        description: err?.message || "Please check your internet connection and try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

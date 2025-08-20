@@ -2,22 +2,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { MoodSelector } from "./MoodSelector";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Save, Heart, TrendingUp } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 interface MoodTrackerProps {
   onNavigate: (screen: string) => void;
 }
 
-const moodHistory = [
-  { date: "Today", mood: 4, notes: "Great therapy session!" },
-  { date: "Yesterday", mood: 3, notes: "Stressful work day but managed well" },
-  { date: "2 days ago", mood: 5, notes: "Perfect weekend with friends" },
-  { date: "3 days ago", mood: 2, notes: "Feeling overwhelmed" },
-  { date: "4 days ago", mood: 4, notes: "Good morning meditation" },
-  { date: "5 days ago", mood: 3, notes: "" },
-  { date: "6 days ago", mood: 4, notes: "Productive day" },
-];
+type MoodRow = { id: string; mood_score: number; notes: string | null; created_at: string };
 
 const getMoodEmoji = (mood: number) => {
   const emojis = { 1: "😰", 2: "😔", 3: "😐", 4: "😊", 5: "😄" };
@@ -33,14 +28,29 @@ export function MoodTracker({ onNavigate }: MoodTrackerProps) {
   const [selectedMood, setSelectedMood] = useState<number>(0);
   const [notes, setNotes] = useState<string>("");
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [history, setHistory] = useState<MoodRow[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState<boolean>(false);
+  const { user } = useAuth();
 
   const handleSaveMood = async () => {
     if (selectedMood === 0) return;
     
     setIsSaving(true);
-    // Save to Supabase
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-    console.log("Saving mood:", { mood: selectedMood, notes });
+    try {
+      const { error } = await supabase.from('moods').insert({
+        user_id: user?.id,
+        mood_score: selectedMood,
+        notes: notes || null,
+      });
+      if (error) {
+        toast({ title: 'Error saving mood', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Saved', description: 'Your mood entry was saved.' });
+        await loadHistory();
+      }
+    } catch (err: any) {
+      toast({ title: 'Network error', description: err?.message || 'Please try again.', variant: 'destructive' });
+    }
     
     // Reset form
     setSelectedMood(0);
@@ -49,6 +59,33 @@ export function MoodTracker({ onNavigate }: MoodTrackerProps) {
     
     // Show success message
   };
+
+  const loadHistory = async () => {
+    if (!user) return;
+    setIsLoadingHistory(true);
+    try {
+      const { data, error } = await supabase
+        .from('moods')
+        .select('id, mood_score, notes, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) {
+        toast({ title: 'Error loading history', description: error.message, variant: 'destructive' });
+      } else {
+        setHistory(data || []);
+      }
+    } catch (err: any) {
+      toast({ title: 'Network error', description: err?.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    loadHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   return (
     <div className="min-h-screen bg-gradient-calm">
@@ -117,28 +154,34 @@ export function MoodTracker({ onNavigate }: MoodTrackerProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {moodHistory.map((entry, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full bg-${getMoodColor(entry.mood)}/20 flex items-center justify-center`}>
-                      <span className="text-lg">{getMoodEmoji(entry.mood)}</span>
+            {isLoadingHistory ? (
+              <div className="text-sm text-muted-foreground">Loading...</div>
+            ) : history.length === 0 ? (
+              <div className="text-sm text-muted-foreground">No entries yet.</div>
+            ) : (
+              <div className="space-y-3">
+                {history.map((entry) => (
+                  <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full bg-${getMoodColor(entry.mood_score)}/20 flex items-center justify-center`}>
+                        <span className="text-lg">{getMoodEmoji(entry.mood_score)}</span>
+                      </div>
+                      <div>
+                        <div className="font-medium text-sm">{new Date(entry.created_at).toLocaleString()}</div>
+                        {entry.notes && (
+                          <div className="text-xs text-muted-foreground mt-1 max-w-48 truncate">
+                            {entry.notes}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <div className="font-medium text-sm">{entry.date}</div>
-                      {entry.notes && (
-                        <div className="text-xs text-muted-foreground mt-1 max-w-48 truncate">
-                          {entry.notes}
-                        </div>
-                      )}
+                    <div className={`text-xs px-2 py-1 rounded-full bg-${getMoodColor(entry.mood_score)}/20 text-${getMoodColor(entry.mood_score)}`}>
+                      {entry.mood_score}/5
                     </div>
                   </div>
-                  <div className={`text-xs px-2 py-1 rounded-full bg-${getMoodColor(entry.mood)}/20 text-${getMoodColor(entry.mood)}`}>
-                    {entry.mood}/5
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

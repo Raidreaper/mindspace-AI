@@ -2,8 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Plus, CheckCircle, Circle, Trash2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 interface Task {
   id: string;
@@ -18,49 +21,111 @@ interface TaskManagerProps {
 
 export function TaskManager({ onNavigate }: TaskManagerProps) {
   const [newTask, setNewTask] = useState<string>("");
-  const [tasks, setTasks] = useState<Task[]>([
-    { id: "1", title: "Morning meditation", completed: true, createdAt: "2024-01-20" },
-    { id: "2", title: "Drink 8 glasses of water", completed: false, createdAt: "2024-01-20" },
-    { id: "3", title: "Call a friend", completed: true, createdAt: "2024-01-20" },
-    { id: "4", title: "Take evening walk", completed: false, createdAt: "2024-01-20" },
-    { id: "5", title: "Practice gratitude journaling", completed: false, createdAt: "2024-01-20" },
-    { id: "6", title: "Read for 30 minutes", completed: true, createdAt: "2024-01-20" },
-    { id: "7", title: "Prepare healthy lunch", completed: false, createdAt: "2024-01-20" },
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isAdding, setIsAdding] = useState<boolean>(false);
+  const { user } = useAuth();
 
-  const completedCount = tasks.filter(task => task.completed).length;
+  const completedCount = useMemo(() => tasks.filter(task => task.completed).length, [tasks]);
   const totalCount = tasks.length;
   const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const handleAddTask = () => {
-    if (newTask.trim()) {
-      const task: Task = {
-        id: Date.now().toString(),
-        title: newTask.trim(),
-        completed: false,
-        createdAt: new Date().toISOString().split('T')[0]
-      };
-      setTasks([task, ...tasks]);
-      setNewTask("");
-      // Save to Supabase
-      console.log("Adding task:", task);
+  const loadTasks = async () => {
+    if (!user) return;
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('id, title, completed, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) {
+        toast({ title: 'Error loading tasks', description: error.message, variant: 'destructive' });
+      } else {
+        const mapped: Task[] = (data || []).map((t: any) => ({
+          id: t.id,
+          title: t.title,
+          completed: t.completed,
+          createdAt: t.created_at,
+        }));
+        setTasks(mapped);
+      }
+    } catch (err: any) {
+      toast({ title: 'Network error', description: err?.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleToggleTask = (taskId: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, completed: !task.completed }
-        : task
-    ));
-    // Update in Supabase
-    console.log("Toggling task:", taskId);
+  useEffect(() => {
+    loadTasks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  const handleAddTask = async () => {
+    if (!user || !newTask.trim() || isAdding) return;
+    setIsAdding(true);
+    try {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert({ user_id: user.id, title: newTask.trim(), completed: false })
+        .select('id, title, completed, created_at')
+        .single();
+      if (error) {
+        toast({ title: 'Error adding task', description: error.message, variant: 'destructive' });
+      } else if (data) {
+        setTasks((prev) => [{
+          id: data.id,
+          title: data.title,
+          completed: data.completed,
+          createdAt: data.created_at,
+        }, ...prev]);
+      setNewTask("");
+      }
+    } catch (err: any) {
+      toast({ title: 'Network error', description: err?.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setIsAdding(false);
+    }
   };
 
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
-    // Delete from Supabase
-    console.log("Deleting task:", taskId);
+  const handleToggleTask = async (taskId: string) => {
+    const current = tasks.find(t => t.id === taskId);
+    if (!current) return;
+    const nextCompleted = !current.completed;
+    setTasks(tasks.map(task => task.id === taskId ? { ...task, completed: nextCompleted } : task));
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ completed: nextCompleted })
+        .eq('id', taskId);
+      if (error) {
+        toast({ title: 'Error updating task', description: error.message, variant: 'destructive' });
+        // revert on error
+        setTasks(tasks.map(task => task.id === taskId ? { ...task, completed: current.completed } : task));
+      }
+    } catch (err: any) {
+      toast({ title: 'Network error', description: err?.message || 'Please try again.', variant: 'destructive' });
+      setTasks(tasks.map(task => task.id === taskId ? { ...task, completed: current.completed } : task));
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    const prev = tasks;
+    setTasks(prev.filter(task => task.id !== taskId));
+    try {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId);
+      if (error) {
+        toast({ title: 'Error deleting task', description: error.message, variant: 'destructive' });
+        setTasks(prev); // revert
+      }
+    } catch (err: any) {
+      toast({ title: 'Network error', description: err?.message || 'Please try again.', variant: 'destructive' });
+      setTasks(prev);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -120,7 +185,7 @@ export function TaskManager({ onNavigate }: TaskManagerProps) {
               />
               <Button 
                 onClick={handleAddTask}
-                disabled={!newTask.trim()}
+                disabled={!newTask.trim() || isAdding}
                 className="bg-primary hover:bg-primary/90"
               >
                 <Plus className="h-4 w-4" />
@@ -136,7 +201,9 @@ export function TaskManager({ onNavigate }: TaskManagerProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {tasks.length === 0 ? (
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading...</div>
+              ) : tasks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Circle className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>No tasks yet. Add one above to get started!</p>

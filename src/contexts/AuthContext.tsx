@@ -41,8 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      // Use environment variable for production URL, fallback to current origin
-      const redirectUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+      // Hardcode production URL to fix redirect issue
+      const redirectUrl = 'https://mindspace-ai.vercel.app';
       
       console.log('Redirecting to:', redirectUrl); // Debug log
       

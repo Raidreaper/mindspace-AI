@@ -115,29 +115,31 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
-  const handleQuickMoodLog = () => {
+  const handleQuickMoodLog = async () => {
     if (!user || quickMood <= 0 || isLogging) return;
     setIsLogging(true);
-    supabase
-      .from('moods')
-      .insert({
-        user_id: user.id,
-        mood_score: quickMood,
-        notes: null,
-      })
-      .then(({ error }) => {
-        if (error) {
-          toast({ title: 'Error logging mood', description: error.message, variant: 'destructive' });
-        } else {
-          toast({ title: 'Mood logged', description: `Saved mood score ${quickMood}/5` });
-          setQuickMood(0);
-          void fetchStats();
-        }
-      })
-      .catch((err) => {
-        toast({ title: 'Network error', description: err?.message || 'Please try again.', variant: 'destructive' });
-      })
-      .finally(() => setIsLogging(false));
+    
+    try {
+      const { error } = await supabase
+        .from('moods')
+        .insert({
+          user_id: user.id,
+          mood_score: quickMood,
+          notes: null,
+        });
+      
+      if (error) {
+        toast({ title: 'Error logging mood', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Mood logged', description: `Saved mood score ${quickMood}/5` });
+        setQuickMood(0);
+        void fetchStats();
+      }
+    } catch (err: any) {
+      toast({ title: 'Network error', description: err?.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setIsLogging(false);
+    }
   };
 
   return (

@@ -3,7 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+// Debug environment variables in development
+if (import.meta.env.DEV) {
+  console.log('Supabase Config:', {
+    url: SUPABASE_URL,
+    key: SUPABASE_PUBLISHABLE_KEY ? '***' + SUPABASE_PUBLISHABLE_KEY.slice(-4) : 'MISSING'
+  });
+}
 
 // Validate environment variables
 if (!SUPABASE_URL) {
@@ -11,7 +19,7 @@ if (!SUPABASE_URL) {
 }
 
 if (!SUPABASE_PUBLISHABLE_KEY) {
-  throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable. Please set it in your .env file or Vercel environment variables.');
+  throw new Error('Missing VITE_SUPABASE_PUBLISHABLE_KEY environment variable. Please set it in your .env file or Vercel environment variables.');
 }
 
 // Import the supabase client like this:
@@ -22,5 +30,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    flowType: 'pkce'
   }
 });

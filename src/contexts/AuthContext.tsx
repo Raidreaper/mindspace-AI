@@ -7,8 +7,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, displayName: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -39,72 +38,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, displayName: string) => {
+  const signInWithGoogle = async () => {
     setLoading(true);
     try {
       const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
         options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            display_name: displayName
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
           }
         }
       });
-      
       if (error) {
         toast({
-          title: "Error",
+          title: 'Error',
           description: error.message,
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Please check your email to confirm your account.",
+          variant: 'destructive'
         });
       }
-      
-      return { error };
     } catch (err: any) {
       toast({
-        title: "Network error",
-        description: err?.message || "Please check your internet connection and try again.",
-        variant: "destructive",
+        title: 'Network error',
+        description: err?.message || 'Please check your internet connection and try again.',
+        variant: 'destructive',
       });
-      return { error: err };
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const signIn = async (email: string, password: string) => {
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive"
-        });
-      }
-      
-      return { error };
-    } catch (err: any) {
-      toast({
-        title: "Network error",
-        description: err?.message || "Please check your internet connection and try again.",
-        variant: "destructive",
-      });
-      return { error: err };
     } finally {
       setLoading(false);
     }
@@ -136,8 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     session,
     loading,
-    signUp,
-    signIn,
+    signInWithGoogle,
     signOut,
   };
 

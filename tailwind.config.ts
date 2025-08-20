@@ -26,7 +26,8 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					glow: 'hsl(var(--primary-glow))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -51,6 +52,21 @@ export default {
 				card: {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
+				},
+				wellness: {
+					DEFAULT: 'hsl(var(--wellness))',
+					foreground: 'hsl(var(--wellness-foreground))'
+				},
+				crisis: {
+					DEFAULT: 'hsl(var(--crisis))',
+					foreground: 'hsl(var(--crisis-foreground))'
+				},
+				mood: {
+					terrible: 'hsl(var(--mood-terrible))',
+					bad: 'hsl(var(--mood-bad))',
+					okay: 'hsl(var(--mood-okay))',
+					good: 'hsl(var(--mood-good))',
+					great: 'hsl(var(--mood-great))'
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
@@ -88,7 +104,24 @@ export default {
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fadeIn 0.5s ease-out',
+				'slide-up': 'slideUp 0.4s ease-out',
+				'bounce-gentle': 'bounceGentle 0.6s ease-out'
+			},
+			backgroundImage: {
+				'gradient-primary': 'var(--gradient-primary)',
+				'gradient-wellness': 'var(--gradient-wellness)',
+				'gradient-calm': 'var(--gradient-calm)'
+			},
+			boxShadow: {
+				'soft': 'var(--shadow-soft)',
+				'wellness': 'var(--shadow-wellness)',
+				'glow': 'var(--shadow-glow)'
+			},
+			transitionProperty: {
+				'smooth': 'var(--transition-smooth)',
+				'bounce': 'var(--transition-bounce)'
 			}
 		}
 	},

@@ -41,7 +41,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     setLoading(true);
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      // Use environment variable for production URL, fallback to current origin
+      const redirectUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+      
+      console.log('Redirecting to:', redirectUrl); // Debug log
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

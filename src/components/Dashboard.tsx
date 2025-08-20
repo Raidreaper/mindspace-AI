@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MoodSelector } from "./MoodSelector";
 import { useState } from "react";
-import { Heart, CheckCircle, AlertTriangle, Brain } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Heart, CheckCircle, AlertTriangle, Brain, LogOut } from "lucide-react";
 
 interface DashboardProps {
   onNavigate: (screen: string) => void;
@@ -10,7 +11,8 @@ interface DashboardProps {
 
 export function Dashboard({ onNavigate }: DashboardProps) {
   const [quickMood, setQuickMood] = useState<number>(0);
-  const userName = "Alex"; // This would come from Supabase auth
+  const { user, signOut } = useAuth();
+  const userName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || "User";
   const completedTasks = 3;
   const totalTasks = 7;
 
@@ -26,9 +28,20 @@ export function Dashboard({ onNavigate }: DashboardProps) {
     <div className="min-h-screen bg-gradient-calm">
       {/* Header */}
       <div className="bg-gradient-primary p-6 text-white">
-        <div className="flex items-center gap-3 mb-2">
-          <Brain className="h-8 w-8" />
-          <h1 className="text-2xl font-bold">MindSpace AI</h1>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <Brain className="h-8 w-8" />
+            <h1 className="text-2xl font-bold">MindSpace AI</h1>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={signOut}
+            className="flex items-center gap-2 text-white border-white/20 hover:bg-white/10"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Logout</span>
+          </Button>
         </div>
         <p className="text-blue-100">Welcome back, {userName}! 🌟</p>
       </div>

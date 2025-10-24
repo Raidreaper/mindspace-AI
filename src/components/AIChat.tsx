@@ -50,7 +50,7 @@ export function AIChat({ onNavigate }: AIChatProps) {
       
       // Debug log to verify model name
       console.log('🔍 AI Chat - Using model:', 'gemini-2.5-flash');
-      console.log('🔍 AI Chat - API Key:', geminiApiKey ? `${geminiApiKey.substring(0, 10)}...` : 'MISSING');
+      console.log('🔍 AI Chat - API Key:', geminiApiKey ? 'Present' : 'MISSING');
       console.log('🔍 AI Chat - Timestamp:', Date.now());
 
       const history = messages

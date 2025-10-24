@@ -39,9 +39,10 @@ export default defineConfig(() => ({
 			}
 		}
 	},
-	define: {
-		__APP_VERSION__: JSON.stringify(Date.now())
-	},
+         define: {
+           __APP_VERSION__: JSON.stringify(Date.now()),
+           __BUILD_TIMESTAMP__: JSON.stringify(Date.now())
+         },
 	optimizeDeps: {
 		force: true
 	}

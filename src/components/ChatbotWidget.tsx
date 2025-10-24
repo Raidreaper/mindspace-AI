@@ -31,7 +31,7 @@ export function ChatbotWidget({ onTaskUpdate }: ChatbotWidgetProps) {
 
   const apiKey = useMemo(() => {
     const key = import.meta.env.VITE_GEMINI_API_KEY || '';
-    console.log('API Key loaded:', key ? 'Yes' : 'No', key ? `${key.substring(0, 10)}...` : '');
+    console.log('API Key loaded:', key ? 'Yes' : 'No');
     return key;
   }, []);
 
@@ -227,7 +227,7 @@ export function ChatbotWidget({ onTaskUpdate }: ChatbotWidgetProps) {
       
       // Debug log to verify model name
       console.log('🔍 Chatbot - Using model:', 'gemini-2.5-flash');
-      console.log('🔍 Chatbot - API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING');
+      console.log('🔍 Chatbot - API Key:', apiKey ? 'Present' : 'MISSING');
       console.log('🔍 Chatbot - Timestamp:', Date.now());
       const historySummary = tasks.slice(0, 10).map((t) => `- ${t.title} ${t.completed ? '(done)' : ''}`).join('\n');
       const prompt = `You are a wellness coach. Based on this task history, propose 3 short, actionable exercise tasks (5-7 words each), return as plain lines without numbering.\nTasks so far:\n${historySummary}`;
@@ -264,7 +264,7 @@ export function ChatbotWidget({ onTaskUpdate }: ChatbotWidgetProps) {
       
       // Debug log to verify model name
       console.log('🔍 Chatbot - Using model:', 'gemini-2.5-flash');
-      console.log('🔍 Chatbot - API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING');
+      console.log('🔍 Chatbot - API Key:', apiKey ? 'Present' : 'MISSING');
       console.log('🔍 Chatbot - Timestamp:', Date.now());
       const tasksContext = tasks.slice(0, 10).map((t, i) => `${i + 1}. ${t.title} ${t.completed ? '(done)' : ''}`).join('\n');
       const context = `You are a supportive mental wellness assistant. The user has these recent tasks:\n${tasksContext}\nBe concise and kind. If the user asks to add a task, prefer the pattern: add task: <title>`;
@@ -297,7 +297,12 @@ export function ChatbotWidget({ onTaskUpdate }: ChatbotWidgetProps) {
         <DialogContent className="sm:max-w-md p-0 overflow-hidden">
           <DialogHeader className="p-4 pb-2 border-b">
             <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2"><Bot className="h-5 w-5" /> AI Wellness Assistant</DialogTitle>
+              <div>
+                <DialogTitle className="flex items-center gap-2"><Bot className="h-5 w-5" /> AI Wellness Assistant</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground mt-1">
+                  Chat with your AI assistant to manage tasks and get wellness suggestions.
+                </DialogDescription>
+              </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={handleSuggest}>💡 Get Task Ideas</Button>
                 <Button variant="ghost" size="sm" onClick={() => setOpen(false)} aria-label="Close">
@@ -307,11 +312,6 @@ export function ChatbotWidget({ onTaskUpdate }: ChatbotWidgetProps) {
             </div>
           </DialogHeader>
           <div className="p-4">
-            <DialogDescription asChild>
-              <p id="chatbot-desc" className="sr-only">Chat with the AI assistant to manage and suggest wellness tasks.</p>
-            </DialogDescription>
-
-
             {suggestions.length > 0 && (
               <div className="mb-3 space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">AI Task Suggestions - Click "Add" to approve:</div>

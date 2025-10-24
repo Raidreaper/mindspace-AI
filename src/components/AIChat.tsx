@@ -22,8 +22,8 @@ export function AIChat({ onNavigate }: AIChatProps) {
   const listRef = useRef<HTMLDivElement | null>(null);
 
   const geminiApiKey = useMemo(() => {
-    // Prefer env var if present, fallback to window injected value
-    return import.meta.env.VITE_GEMINI_API_KEY || (window as any).__GEMINI_API_KEY__;
+    // Only use environment variable - no fallbacks
+    return import.meta.env.VITE_GEMINI_API_KEY;
   }, []);
 
   useEffect(() => {
@@ -43,15 +43,14 @@ export function AIChat({ onNavigate }: AIChatProps) {
     setIsSending(true);
 
     try {
-      // Force fresh import with cache busting
-      const { GoogleGenerativeAI } = await import(`@google/generative-ai?v=${Date.now()}`);
+      // Standard import - rely on Vite config for cache busting
+      const { GoogleGenerativeAI } = await import('@google/generative-ai');
       const genAI = new GoogleGenerativeAI(geminiApiKey);
       const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
       
       // Debug log to verify model name
       console.log('🔍 AI Chat - Using model:', 'gemini-2.5-flash');
       console.log('🔍 AI Chat - API Key:', geminiApiKey ? 'Present' : 'MISSING');
-      console.log('🔍 AI Chat - Timestamp:', Date.now());
 
       const history = messages
         .slice(-10)

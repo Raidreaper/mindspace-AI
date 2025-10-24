@@ -6,6 +6,7 @@ import { Bot, Send, X } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatAIResponse, createConversationalPrompt, createTaskSuggestionPrompt } from '@/lib/ai-formatter';
 
 type ChatMessage = {
   id: string;
@@ -229,11 +230,11 @@ export function ChatbotWidget({ onTaskUpdate }: ChatbotWidgetProps) {
       // Debug log to verify model name
       console.log('🔍 Chatbot - Using model:', 'gemini-2.5-flash');
       console.log('🔍 Chatbot - API Key:', apiKey ? 'Present' : 'MISSING');
-      const historySummary = tasks.slice(0, 10).map((t) => `- ${t.title} ${t.completed ? '(done)' : ''}`).join('\n');
-      const prompt = `You are a wellness coach. Based on this task history, propose 3 short, actionable exercise tasks (5-7 words each), return as plain lines without numbering.\nTasks so far:\n${historySummary}`;
+      const taskHistory = tasks.slice(0, 10).map((t) => `${t.title} ${t.completed ? '(done)' : ''}`);
+      const prompt = createTaskSuggestionPrompt(taskHistory);
       const result = await model.generateContent(prompt);
       const text = result?.response?.text?.() || '';
-      const lines = text.split(/\r?\n/).map((l) => l.replace(/^[-*\d.\s]+/, '').trim()).filter(Boolean);
+      const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
       setSuggestions(lines.slice(0, 5));
     } catch (err: any) {
       toast({ title: 'AI error', description: err?.message || 'Failed to fetch suggestions.', variant: 'destructive' });
@@ -266,15 +267,17 @@ export function ChatbotWidget({ onTaskUpdate }: ChatbotWidgetProps) {
       console.log('🔍 Chatbot - Using model:', 'gemini-2.5-flash');
       console.log('🔍 Chatbot - API Key:', apiKey ? 'Present' : 'MISSING');
       const tasksContext = tasks.slice(0, 10).map((t, i) => `${i + 1}. ${t.title} ${t.completed ? '(done)' : ''}`).join('\n');
-      const context = `You are a supportive mental wellness assistant. The user has these recent tasks:\n${tasksContext}\nBe concise and kind. If the user asks to add a task, prefer the pattern: add task: <title>`;
+      const context = `You are a supportive mental wellness assistant. The user has these recent tasks:\n${tasksContext}\nBe conversational, warm, and helpful. If the user asks to add a task, suggest using: add task: <title>`;
       const history = messages
         .slice(-10)
         .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
         .join('\n');
-      const prompt = `${context}\n\n${history}${history ? '\n' : ''}User: ${userMsg.content}\nAssistant:`;
+      
+      const prompt = createConversationalPrompt(context, history, userMsg.content);
       const result = await model.generateContent(prompt);
-      const text = result?.response?.text?.() || 'Sorry, I could not generate a response.';
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: text }]);
+      const rawText = result?.response?.text?.() || 'Sorry, I could not generate a response.';
+      const formattedText = formatAIResponse(rawText);
+      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: formattedText }]);
     } catch (err: any) {
       toast({ title: 'AI error', description: err?.message || 'Failed to reach Gemini.', variant: 'destructive' });
     } finally {
@@ -326,9 +329,10 @@ export function ChatbotWidget({ onTaskUpdate }: ChatbotWidgetProps) {
             <div ref={listRef} className="h-80 overflow-y-auto space-y-3 pr-1">
               {messages.map((m) => (
                 <div key={m.id} className={`flex ${m.role === 'assistant' ? '' : 'justify-end'}`}>
-                  <div className={`rounded-lg p-3 text-sm max-w-[85%] ${m.role === 'assistant' ? 'bg-muted' : 'bg-primary text-primary-foreground'}`}>
-                    {m.content}
-                  </div>
+                  <div 
+                    className={`rounded-lg p-3 text-sm max-w-[85%] ${m.role === 'assistant' ? 'bg-muted' : 'bg-primary text-primary-foreground'}`}
+                    dangerouslySetInnerHTML={{ __html: m.content }}
+                  />
                 </div>
               ))}
             </div>

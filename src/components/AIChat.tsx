@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Send, Bot, User } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { formatAIResponse, createConversationalPrompt } from '@/lib/ai-formatter';
 
 interface AIChatProps {
   onNavigate: (screen: string) => void;
@@ -56,11 +57,17 @@ export function AIChat({ onNavigate }: AIChatProps) {
         .slice(-10)
         .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
         .join('\n');
-      const prompt = `${history}${history ? '\n' : ''}User: ${userMessage.content}\nAssistant:`;
+      
+      const prompt = createConversationalPrompt(
+        'You are a supportive wellness assistant helping with mental health, tasks, and general well-being.',
+        history,
+        userMessage.content
+      );
 
       const result = await model.generateContent(prompt);
-      const text = result?.response?.text?.() || 'Sorry, I could not generate a response.';
-      const assistantMessage: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', content: text };
+      const rawText = result?.response?.text?.() || 'Sorry, I could not generate a response.';
+      const formattedText = formatAIResponse(rawText);
+      const assistantMessage: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', content: formattedText };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err: any) {
       toast({ title: 'AI error', description: err?.message || 'Failed to reach Gemini API.', variant: 'destructive' });
@@ -110,9 +117,10 @@ export function AIChat({ onNavigate }: AIChatProps) {
                       <div className={`h-8 w-8 rounded-full flex items-center justify-center ${m.role === 'assistant' ? 'bg-primary text-primary-foreground' : 'bg-wellness text-wellness-foreground'}`}>
                         {m.role === 'assistant' ? <Bot className="h-4 w-4" /> : <User className="h-4 w-4" />}
                       </div>
-                      <div className={`rounded-lg p-3 text-sm ${m.role === 'assistant' ? 'bg-muted' : 'bg-wellness/20'}`}>
-                        {m.content}
-                      </div>
+                      <div 
+                        className={`rounded-lg p-3 text-sm ${m.role === 'assistant' ? 'bg-muted' : 'bg-wellness/20'}`}
+                        dangerouslySetInnerHTML={{ __html: m.content }}
+                      />
                     </div>
                   </div>
                 ))

@@ -220,9 +220,15 @@ export function ChatbotWidget({ onTaskUpdate }: ChatbotWidgetProps) {
     }
     try {
       setSuggestions([]);
-      const { GoogleGenerativeAI } = await import('@google/generative-ai');
+      // Force fresh import with cache busting
+      const { GoogleGenerativeAI } = await import(`@google/generative-ai?v=${Date.now()}`);
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      
+      // Debug log to verify model name
+      console.log('🔍 Chatbot - Using model:', 'gemini-2.5-flash');
+      console.log('🔍 Chatbot - API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING');
+      console.log('🔍 Chatbot - Timestamp:', Date.now());
       const historySummary = tasks.slice(0, 10).map((t) => `- ${t.title} ${t.completed ? '(done)' : ''}`).join('\n');
       const prompt = `You are a wellness coach. Based on this task history, propose 3 short, actionable exercise tasks (5-7 words each), return as plain lines without numbering.\nTasks so far:\n${historySummary}`;
       const result = await model.generateContent(prompt);
@@ -251,9 +257,15 @@ export function ChatbotWidget({ onTaskUpdate }: ChatbotWidgetProps) {
 
     setIsSending(true);
     try {
-      const { GoogleGenerativeAI } = await import('@google/generative-ai');
+      // Force fresh import with cache busting
+      const { GoogleGenerativeAI } = await import(`@google/generative-ai?v=${Date.now()}`);
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      
+      // Debug log to verify model name
+      console.log('🔍 Chatbot - Using model:', 'gemini-2.5-flash');
+      console.log('🔍 Chatbot - API Key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING');
+      console.log('🔍 Chatbot - Timestamp:', Date.now());
       const tasksContext = tasks.slice(0, 10).map((t, i) => `${i + 1}. ${t.title} ${t.completed ? '(done)' : ''}`).join('\n');
       const context = `You are a supportive mental wellness assistant. The user has these recent tasks:\n${tasksContext}\nBe concise and kind. If the user asks to add a task, prefer the pattern: add task: <title>`;
       const history = messages

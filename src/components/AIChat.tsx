@@ -43,9 +43,15 @@ export function AIChat({ onNavigate }: AIChatProps) {
     setIsSending(true);
 
     try {
-      const { GoogleGenerativeAI } = await import('@google/generative-ai');
+      // Force fresh import with cache busting
+      const { GoogleGenerativeAI } = await import(`@google/generative-ai?v=${Date.now()}`);
       const genAI = new GoogleGenerativeAI(geminiApiKey);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      
+      // Debug log to verify model name
+      console.log('🔍 AI Chat - Using model:', 'gemini-2.5-flash');
+      console.log('🔍 AI Chat - API Key:', geminiApiKey ? `${geminiApiKey.substring(0, 10)}...` : 'MISSING');
+      console.log('🔍 AI Chat - Timestamp:', Date.now());
 
       const history = messages
         .slice(-10)

@@ -8,6 +8,14 @@ export default defineConfig(() => ({
 	server: {
 		host: "::",
 		port: 8080,
+		headers: {
+			'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+			'Pragma': 'no-cache',
+			'Expires': '0',
+			'Last-Modified': new Date().toUTCString(),
+			'ETag': `"${Date.now()}"`
+		},
+		force: true
 	},
 	plugins: [
 		react(),
@@ -20,6 +28,9 @@ export default defineConfig(() => ({
 	build: {
 		rollupOptions: {
 			output: {
+				entryFileNames: `assets/[name]-${Date.now()}.js`,
+				chunkFileNames: `assets/[name]-${Date.now()}.js`,
+				assetFileNames: `assets/[name]-${Date.now()}.[ext]`,
 				manualChunks: {
 					vendor: ['react', 'react-dom'],
 					supabase: ['@supabase/supabase-js'],
@@ -27,5 +38,11 @@ export default defineConfig(() => ({
 				}
 			}
 		}
+	},
+	define: {
+		__APP_VERSION__: JSON.stringify(Date.now())
+	},
+	optimizeDeps: {
+		force: true
 	}
 }));
